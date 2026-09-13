@@ -1,0 +1,31 @@
+name: Välkomstmejl
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write   # för att hålla schemat vid liv (GitHub pausar det efter 60 dagar)
+
+concurrency:
+  group: valkomstmejl
+  cancel-in-progress: false
+
+jobs:
+  skicka:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skicka välkomstmejl
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: python3 valkomstmejl.py
+      - name: Håll schemat aktivt
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/valkomstmejl.yml/enable" || true
