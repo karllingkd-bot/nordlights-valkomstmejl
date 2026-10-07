@@ -80,8 +80,11 @@ _token = None
 def post(url, payload, headers=None):
     req = urllib.request.Request(url, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json", **(headers or {})})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:  # Shopifys svar säger varför (t.ex. ogiltig nyckel), inte bara "400"
+        raise RuntimeError(f"{e.code} från {url.split(STORE)[-1]}: {e.read()[:300].decode(errors='replace')}") from None
 
 
 def token():
